@@ -7,8 +7,8 @@ def cut_suffix(word):
     if len(word) == 0:
         return word, suffix, False
 
-    if word[-1:] in ['.', ',', '?', '!']:
-        suffix = word[-1:]
+    if word[-1] in ['.', ',', '?', '!']:
+        suffix = word[-1]
     return word.lower().strip(' ,.?!'), suffix, word.istitle()
 
 
@@ -66,7 +66,7 @@ class TextDistort:
         word, suffix, is_title = cut_suffix(word_raw)
         first_chars, last_chars = word[0:self._g], word[-self._g:]
         res = word_raw
-        if not (first_chars, last_chars) in self.database:
+        if not (first_chars, last_chars) in self.database or len(word_raw) < 4:
             pass
         elif self._threshold > 0:
             candidates = [
