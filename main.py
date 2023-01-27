@@ -27,7 +27,7 @@ if os.environ.get('PYTHONANYWHERE_SITE'):
 # Initialize bot and dispatcher
 bot = Bot(**bot_config)
 dp = Dispatcher(bot)
-distort = TextDistort(db_path='pornlist_yandex_data.txt', threshold=0, substring_length=0)
+distort = TextDistort(db_path='explicit_words_list.txt', threshold=0, substring_length=0)
 
 
 @dp.message_handler(commands=['start', 'help'])
