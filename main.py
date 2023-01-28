@@ -5,8 +5,10 @@ It echoes any incoming text messages in distorted way.
 
 import logging
 import os
+import random
 
 from aiogram import Bot, Dispatcher, executor, types
+from aiogram.dispatcher.filters import ChatTypeFilter
 
 from text_distort import TextDistort
 from dotenv import load_dotenv
@@ -40,9 +42,18 @@ async def send_welcome(message: types.Message):
                         parse_mode="HTML")
 
 
-@dp.message_handler()
+@dp.message_handler(chat_type=types.ChatType.PRIVATE, content_types=types.ContentTypes.TEXT)
 async def echo(message: types.Message):
-    if message.text:
+    answer = "\n".join([
+        distort(line) if line else ""
+        for line in message.text.splitlines()
+    ])
+    await message.answer(answer)
+
+
+@dp.message_handler(chat_type=types.ChatType.SUPER_GROUP, content_types=types.ContentTypes.TEXT)
+async def echo(message: types.Message):
+    if random.random() < 0.05:
         answer = "\n".join([
             distort(line) if line else ""
             for line in message.text.splitlines()
