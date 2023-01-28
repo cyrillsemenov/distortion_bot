@@ -75,8 +75,7 @@ def levenshtein_distance(str1, str2):
 
 class TextDistort:
     def __init__(self,
-                 db_path: str, gist_id: Optional[str] = None, threshold: int = 6, substring_length: int = 2,
-                 reduplication_probability: float = 0.2
+                 db_path: str, gist_id: Optional[str] = None, substring_length: int = 2
                  ):
         """
         This class creates a text distortion effect by using a given dictionary file as a reference.
@@ -89,22 +88,32 @@ class TextDistort:
         :param db_path: path to text file with list of words
         :param gist_id: optional id of a gist with data,
             if provided `db_path` must be the name of the file in the gist
-        :param threshold: maximal Levenshtein distance to substitute words
         :param substring_length: length of the substrings that are taken
             from the beginning and end of each word when the database is created
-        :param reduplication_probability: if the word is not in the list,
-            the probability of its echo-duplication
         """
         self.database: Dict[tuple, List[str]] = {}
         self._db_path = db_path
         self._gist_id = gist_id
-        self._threshold = threshold
+        # self._threshold = threshold
         self._g = substring_length
-        self._rp = reduplication_probability
+        # self._rp = reduplication_probability
         self._load_data()
 
-    def __call__(self, string: str, *args, **kwargs) -> str:
-        words = [self._lookup(word) for word in string.split()]
+    def __call__(
+            self,
+            string: str, threshold: int = 6, reduplication_probability: float = 0.2,
+            *args, **kwargs
+    ) -> str:
+        """
+        Mock words
+
+        :param string: input string to be distorted
+        :param threshold: maximal Levenshtein distance to substitute words
+        :param reduplication_probability: if the word is not in the list,
+            the probability of its echo-duplication
+        :return: distorted string
+        """
+        words = [self._lookup(word, threshold, reduplication_probability) for word in string.split()]
         return " ".join(words).strip()
 
     def _populate(self, word):
@@ -127,7 +136,7 @@ class TextDistort:
                 for line in fd.readlines():
                     self._populate(line)
 
-    def _lookup(self, word_raw: str) -> str:
+    def _lookup(self, word_raw: str, threshold: int, reduplication_probability: float) -> str:
         word, suffix, is_title = cut_suffix(word_raw)
         first_chars, last_chars = word[0:self._g], word[-self._g:]
         res = word
@@ -136,12 +145,12 @@ class TextDistort:
             pass
         elif not (first_chars, last_chars) in self.database:
             stoplist = ["хуй", "хуе", "хуё", "хуя"]
-            if not any([word.startswith(s) for s in stoplist]) and random.random() < self._rp:
+            if not any([word.startswith(s) for s in stoplist]) and random.random() < reduplication_probability:
                 res = reduplicate(word, repl="ху", soften=True)
-        elif self._threshold > 0:
+        elif threshold > 0:
             candidates = [
                 word for word in self.database[(first_chars, last_chars)]
-                if levenshtein_distance(word, word) < self._threshold
+                if levenshtein_distance(word, word) < threshold
             ]
             if candidates:
                 res = random.choice(candidates)
