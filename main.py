@@ -43,7 +43,11 @@ async def send_welcome(message: types.Message):
 @dp.message_handler()
 async def echo(message: types.Message):
     if message.text:
-        await message.answer(distort(message.text))
+        answer = "\n".join([
+            distort(line) if line else ""
+            for line in message.text.splitlines()
+        ])
+        await message.answer(answer)
 
 
 if __name__ == '__main__':
