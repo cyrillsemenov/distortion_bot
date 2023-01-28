@@ -43,7 +43,7 @@ def reduplicate(word: str, repl: str = "ху", soften: bool = True) -> str:
         word = word[pattern.start()+1:]
 
     # Soften first vowel after replacement
-    if soften:
+    if soften and any([word.startswith(s) for s in "аоуыэ"]):
         word = re.sub(r"[аоуыэ]", lambda x: softening[x.group()], word, count=1)
 
     # Concatenate prefix, sub and word
