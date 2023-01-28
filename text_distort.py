@@ -1,8 +1,10 @@
 import random
 import sys
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import re
+
+import requests
 
 
 def reduplicate(word: str, repl: str = "ху", soften: bool = True) -> str:
@@ -73,7 +75,7 @@ def levenshtein_distance(str1, str2):
 
 class TextDistort:
     def __init__(self,
-                 db_path: str, threshold: int = 6, substring_length: int = 2,
+                 db_path: str, gist_id: Optional[str] = None, threshold: int = 6, substring_length: int = 2,
                  reduplication_probability: float = 0.2
                  ):
         """
@@ -85,6 +87,8 @@ class TextDistort:
         to optimize the search process and minimize the computation time.
 
         :param db_path: path to text file with list of words
+        :param gist_id: optional id of a gist with data,
+            if provided `db_path` must be the name of the file in the gist
         :param threshold: maximal Levenshtein distance to substitute words
         :param substring_length: length of the substrings that are taken
             from the beginning and end of each word when the database is created
@@ -93,6 +97,7 @@ class TextDistort:
         """
         self.database: Dict[tuple, List[str]] = {}
         self._db_path = db_path
+        self._gist_id = gist_id
         self._threshold = threshold
         self._g = substring_length
         self._rp = reduplication_probability
@@ -102,16 +107,25 @@ class TextDistort:
         words = [self._lookup(word) for word in string.split()]
         return " ".join(words).strip()
 
+    def _populate(self, word):
+        word = word.strip()
+        first_chars = word[0:self._g]
+        last_chars = word[-self._g:]
+        if self.database.get((first_chars, last_chars)):
+            self.database[(first_chars, last_chars)].append(word)
+        else:
+            self.database[(first_chars, last_chars)] = [word, ]
+
     def _load_data(self) -> None:
-        with open(self._db_path) as fd:
-            for line in fd.readlines():
-                word = line.strip()
-                first_chars = word[0:self._g]
-                last_chars = word[-self._g:]
-                if self.database.get((first_chars, last_chars)):
-                    self.database[(first_chars, last_chars)].append(word)
-                else:
-                    self.database[(first_chars, last_chars)] = [word, ]
+        if self._gist_id:
+            r = requests.get(f"https://api.github.com/gists/{self._gist_id}")
+            lines = r.json()['files'][self._db_path]['content'].splitlines()
+            for line in lines:
+                self._populate(line)
+        elif self._db_path:
+            with open(self._db_path) as fd:
+                for line in fd.readlines():
+                    self._populate(line)
 
     def _lookup(self, word_raw: str) -> str:
         word, suffix, is_title = cut_suffix(word_raw)
@@ -143,8 +157,8 @@ class TextDistort:
 
 if __name__ == "__main__":
     distort = TextDistort(db_path='explicit_words_list.txt')
-    for line in sys.stdin:
-        if line:
-            print(distort(line))
+    for in_line in sys.stdin:
+        if in_line:
+            print(distort(in_line))
         else:
             print("")

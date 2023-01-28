@@ -56,6 +56,8 @@ distorted_text = distort('This is a test text')
 
 ### Parameters
 - `db_path`: path to text file with list of words.
+- `gist_id`: optional id of a gist with data,
+            if provided `db_path` must be the name of the file in the gist.
 - `threshold`: maximal Levenshtein distance to substitute words.
 - `substring_length`: length of the substrings that are taken from the beginning and end of each word when the database is created.
 - `reduplication_probability`: if the word is not in the list, the probability of its echo-duplication
