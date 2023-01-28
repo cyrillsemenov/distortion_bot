@@ -150,14 +150,26 @@ class TextDistort:
         elif threshold > 0:
             candidates = [
                 word for word in self.database[(first_chars, last_chars)]
-                if levenshtein_distance(word, word) < threshold
+                if levenshtein_distance(word_raw, word) < threshold
             ]
+            if not candidates and random.random() < 0.5:
+                candidates = sum([
+                    word for word in [
+                        self.database[key] for key in self.database.keys() if key[1] == last_chars
+                    ] if levenshtein_distance(word_raw, word) < threshold
+                ], [])
             if candidates:
                 res = random.choice(candidates)
         else:
             candidates = [
                 word for word in self.database[(first_chars, last_chars)]
             ]
+            if not candidates and random.random() < 0.5:
+                candidates = sum([
+                    word for word in [
+                        self.database[key] for key in self.database.keys() if key[1] == last_chars
+                    ] if levenshtein_distance(word_raw, word) < threshold
+                ], [])
             res = sorted(candidates, key=lambda x: levenshtein_distance(x, word))[0]
         if is_title:
             res = res.title()
