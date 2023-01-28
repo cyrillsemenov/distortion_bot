@@ -9,7 +9,7 @@ This is a simple echo bot that echoes any incoming text messages in a distorted 
 The bot uses the text_distort module to replace words in the incoming message with words are read from a file, which is a list of words.
 
 To start this bot just fill [`.env`](.env.example) file and then run:
-``` bash
+```bash
 pip install -r requirements.txt
 python main.py
 ```
@@ -19,6 +19,13 @@ The bot will start polling for updates and will respond to any incoming text mes
 You can also customize the behavior of the bot by [adjusting the parameters of the TextDistort class](#text-distortion) in the [`main.py`](main.py) file.
 
 It is worth noting that the bot uses a proxy if the environment variable `'PYTHONANYWHERE_SITE'` is set.
+
+> **Note**
+>
+> You cal also run [`text_distort.py`](text_distort.py) as CLI:
+> ```bash
+> python text_distort.py
+> ```
 
 ---
 
@@ -51,3 +58,4 @@ distorted_text = distort('This is a test text')
 - `db_path`: path to text file with list of words.
 - `threshold`: maximal Levenshtein distance to substitute words.
 - `substring_length`: length of the substrings that are taken from the beginning and end of each word when the database is created.
+- `reduplication_probability`: if the word is not in the list, the probability of its echo-duplication
