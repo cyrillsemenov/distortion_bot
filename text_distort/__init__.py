@@ -40,9 +40,6 @@ def reduplicate(word: str, repl: str = "ху", soften: bool = True) -> str:
     if pattern:
         prefix = prefix+word[:pattern.start()]
         word = word[pattern.end():]
-    # послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный
-    # тест тест тест тест етст тест тест тест тест тест етст тест тест тест тест тест етст тест тест тест тест тест етст тест
-    # область область область область область область область область область область область область область область область область область область
 
     # Soften first vowel after replacement
     if soften and any([word.startswith(s) for s in "аоуыэ"]):
@@ -155,7 +152,7 @@ class TextDistort:
         candidates = []
         if len(word) > 3:
             if not (first_chars, last_chars) in self.database:
-                if random.random() > reduplication_probability:
+                if random.random() < reduplication_probability:
                     candidates = sum([
                         word for word in [
                             self.database[key] for key in self.database.keys() if key[1] == last_chars
