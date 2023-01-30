@@ -5,7 +5,7 @@ from aiogram.types import Message, ChatType, ContentTypes
 
 from text_distort import TextDistort
 
-distort = TextDistort(db_path='explicit_words_list.txt')
+distort = TextDistort(db_path='../explicit_words_list.txt')
 
 
 async def echo_private(message: Message):
@@ -32,5 +32,5 @@ def setup(dp: Dispatcher):
     )
     dp.register_message_handler(
         echo_private,
-        chat_type=ChatType.SUPER_GROUP, content_types=ContentTypes.TEXT
+        chat_type=[ChatType.SUPERGROUP, ChatType.GROUP], content_types=ContentTypes.TEXT
     )

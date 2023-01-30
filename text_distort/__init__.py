@@ -1,6 +1,8 @@
+import os
 import random
 import sys
-from typing import Dict, List, Optional
+import textwrap
+from typing import Dict, List, Optional, Tuple
 
 import re
 
@@ -12,11 +14,12 @@ def reduplicate(word: str, repl: str = "ху", soften: bool = True) -> str:
     Introduce reduplication in a Russian word.
     """
     # prefixes = ["при", "до", "без"]
-    prefixes = [
+    prefixes = sorted([
         "без", "вдоль", "вне", "вслед",
-        "вы", "между", "мимо", "на", "над", "надо", "об", "от", "по", "под",
-        "после", "пред", "при", "с", "сверх", "среди", "средь", "через"
-    ]
+        "вы", "между", "мимо", "на", "над", "надо", "от", "по",
+        "после", "пред", "при", "под", "с", "сверх", "среди", "средь", "через"
+    ], key=len)
+    prefixes.reverse()
 
     softening = {
         "а": "я",
@@ -33,14 +36,13 @@ def reduplicate(word: str, repl: str = "ху", soften: bool = True) -> str:
             prefix = prefix+word[:len(p)]
             word = word[len(p):]
 
-    # stoplist = ["хуй", "хуе", "хуё", ]
-    # if any([word.startswith(s) for s in stoplist]):
-    #     return prefix + word
-
-    pattern = re.search(r"[^аоуыэяёюие]+", word)
+    pattern = re.search(r"^[^аоуыэяёюие]+", word)
     if pattern:
         prefix = prefix+word[:pattern.start()]
-        word = word[pattern.start()+1:]
+        word = word[pattern.end():]
+    # послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный послеобеденный
+    # тест тест тест тест етст тест тест тест тест тест етст тест тест тест тест тест етст тест тест тест тест тест етст тест
+    # область область область область область область область область область область область область область область область область область область
 
     # Soften first vowel after replacement
     if soften and any([word.startswith(s) for s in "аоуыэ"]):
@@ -50,14 +52,22 @@ def reduplicate(word: str, repl: str = "ху", soften: bool = True) -> str:
     return prefix + repl + word
 
 
-def cut_suffix(word):
+def cut_suffix(word: str) -> Tuple[str, str, str, bool]:
+    prefix = ''
     suffix = ''
-    if len(word) == 0:
-        return word, suffix, False
-
-    if word[-1] in ['.', ',', '?', '!']:
-        suffix = word[-1]
-    return word.lower().strip(' ,.?!'), suffix, word.istitle()
+    word: List[str] = list(word)
+    for symbol in word[0]:
+        if symbol in ',.?!«"\'([{\t':
+            prefix += word.pop(0)
+        else:
+            break
+    for symbol in word[::-1]:
+        if symbol in ',.?!»"\')]}\t':
+            suffix = word.pop() + suffix
+        else:
+            break
+    word: str = "".join(word)
+    return prefix, word.lower().strip(), suffix, word[:1].isupper()
 
 
 def levenshtein_distance(str1, str2):
@@ -137,49 +147,49 @@ class TextDistort:
                     self._populate(line)
 
     def _lookup(self, word_raw: str, threshold: int, reduplication_probability: float) -> str:
-        word, suffix, is_title = cut_suffix(word_raw)
+        prefix, word, suffix, is_title = cut_suffix(word_raw)
+        if not word:
+            return word_raw
         first_chars, last_chars = word[0:self._g], word[-self._g:]
         res = word
+        candidates = []
+        if len(word) > 3:
+            if not (first_chars, last_chars) in self.database:
+                if random.random() > reduplication_probability:
+                    candidates = sum([
+                        word for word in [
+                            self.database[key] for key in self.database.keys() if key[1] == last_chars
+                        ] if levenshtein_distance(word_raw, word) < threshold
+                    ], [])
+            else:
+                candidates = [
+                    word for word in self.database[(first_chars, last_chars)]
+                    if levenshtein_distance(word_raw, word) < threshold or not threshold
+                ]
 
-        if len(word) < 4:
-            pass
-        elif not (first_chars, last_chars) in self.database:
-            stoplist = ["хуй", "хуе", "хуё", "хуя"]
-            if not any([word.startswith(s) for s in stoplist]) and random.random() < reduplication_probability:
-                res = reduplicate(word, repl="ху", soften=True)
-        elif threshold > 0:
-            candidates = [
-                word for word in self.database[(first_chars, last_chars)]
-                if levenshtein_distance(word_raw, word) < threshold
-            ]
-            if not candidates and random.random() < 0.5:
-                candidates = sum([
-                    word for word in [
-                        self.database[key] for key in self.database.keys() if key[1] == last_chars
-                    ] if levenshtein_distance(word_raw, word) < threshold
-                ], [])
-            if candidates:
-                res = random.choice(candidates)
-        else:
-            candidates = [
-                word for word in self.database[(first_chars, last_chars)]
-            ]
-            if not candidates and random.random() < 0.5:
-                candidates = sum([
-                    word for word in [
-                        self.database[key] for key in self.database.keys() if key[1] == last_chars
-                    ] if levenshtein_distance(word_raw, word) < threshold
-                ], [])
-            res = sorted(candidates, key=lambda x: levenshtein_distance(x, word))[0]
+            if not candidates:
+                stop_list = ["хуй", "хуе", "хуё", "хуя"]
+                if not any([word.startswith(s) for s in stop_list]) and random.random() < reduplication_probability:
+                    res = reduplicate(word, repl="ху", soften=True)
+            else:
+                if word in candidates:
+                    return word_raw
+                if threshold > 0:
+                    res = random.choice(candidates)
+                else:
+                    res = sorted(candidates, key=lambda x: levenshtein_distance(x, word))[0]
+
         if is_title:
             res = res.title()
-        return res + suffix
+        return prefix + res + suffix
 
 
 if __name__ == "__main__":
-    distort = TextDistort(db_path='explicit_words_list.txt')
+    distort = TextDistort(db_path='../explicit_words_list.txt')
     for in_line in sys.stdin:
         if in_line:
-            print(distort(in_line))
+            for out_line in textwrap.wrap(
+                    distort(in_line), width=70, break_long_words=False):
+                print(out_line)
         else:
             print("")
